@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
-	"github.com/go-jet/jet/v2/internal/utils"
 	"reflect"
 	"strings"
 )
@@ -221,19 +220,23 @@ func (s *scanContext) rowElem(index int) interface{} {
 	return value
 }
 
-func (s *scanContext) rowElemValuePtr(index int) reflect.Value {
+func (s *scanContext) rowElemValuePtr(index int) *reflect.Value {
 	rowElem := s.rowElem(index)
 	rowElemValue := reflect.ValueOf(rowElem)
 
 	if rowElemValue.Kind() == reflect.Ptr {
-		return rowElemValue
+		return &rowElemValue
 	}
 
 	if rowElemValue.CanAddr() {
-		return rowElemValue.Addr()
+		addr := rowElemValue.Addr()
+		return &addr
 	}
 
-	newElem := reflect.New(rowElemValue.Type())
-	newElem.Elem().Set(rowElemValue)
-	return newElem
+	if rowElemValue.IsValid() {
+		newElem := reflect.New(rowElemValue.Type())
+		newElem.Elem().Set(rowElemValue)
+		return &newElem
+	}
+	return nil
 }
